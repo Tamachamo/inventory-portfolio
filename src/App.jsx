@@ -54,7 +54,7 @@ export default function App() {
       setStocks(st);
       const mv = await getMoves({ from, to, q: "", type: "" });
       setMoves(mv);
-      setToast({ type: "ok", msg: "接続OK。SheetsとAPIが繋がってる。" });
+      setToast({ type: "ok", msg: "接続OK。" });
     } catch (e) {
       setToast({ type: "ng", msg: `起動エラー: ${String(e.message || e)}` });
     } finally {
@@ -77,7 +77,7 @@ export default function App() {
     setToast({ type: "", msg: "" });
     try {
       await postMove(payload);
-      setToast({ type: "ok", msg: "登録完了。stock_moves に行が追加されたはず。" });
+      setToast({ type: "ok", msg: "登録完了。" });
       await refreshStocks();
       await refreshMoves();
       setTab("stocks");
@@ -92,7 +92,7 @@ export default function App() {
     try {
       const csv = await exportMovesCsv(from, to);
       downloadText(`stock_moves_${from}_${to}.csv`, csv, "text/csv;charset=utf-8");
-      setToast({ type: "ok", msg: "CSV出力した。Excelで開ける。" });
+      setToast({ type: "ok", msg: "CSV出力しました。" });
     } catch (e) {
       setToast({ type: "ng", msg: `CSV出力エラー: ${String(e.message || e)}` });
     }
@@ -101,7 +101,7 @@ export default function App() {
   const right = (
     <div>
       <div className="badge">
-        API: {import.meta.env.VITE_API_BASE_URL ? "SET" : "MISSING"} / KEY: {import.meta.env.VITE_API_KEY ? "SET" : "MISSING"}
+        API: {import.meta.env.VITE_API_BASE_URL ? "SET" : "MISSING"}
       </div>
       <div style={{ height: 8 }} />
       <button type="button" onClick={boot} disabled={loading}>
@@ -113,7 +113,7 @@ export default function App() {
   return (
     <Layout
       title="在庫・受払管理（Sheets DB / Apps Script API）"
-      subtitle="在庫は stock_moves から集計。削除じゃなく履歴で残す。業務っぽさ＝強さ。"
+      subtitle="毎日自動的に初期状態に戻るので、自由に使用して大丈夫です。"
       right={right}
     >
       <div className="kpi">
@@ -153,7 +153,7 @@ export default function App() {
               <input value={qStocks} onChange={(e) => setQStocks(e.target.value)} placeholder="例: コイル / MD-COIL-001" />
             </div>
             <div>
-              <label style={{ fontSize: 12, color: "var(--muted)" }}>場所（今はALL推奨）</label>
+              <label style={{ fontSize: 12, color: "var(--muted)" }}>場所</label>
               <select value={location} onChange={(e) => setLocation(e.target.value)}>
                 <option value="">(ALL)</option>
                 {locations.map((l) => (
