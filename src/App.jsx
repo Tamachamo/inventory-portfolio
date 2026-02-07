@@ -5,32 +5,41 @@ import StockTable from "./components/StockTable.jsx";
 import MoveForm from "./components/MoveForm.jsx";
 import MovesTable from "./components/MovesTable.jsx";
 import { downloadText, safeNum } from "./utils.js";
-import { getItems, getStocks, getMoves, postMove, exportMovesCsv, health, getLocations } from "./api.js";
+import {
+  getItems,
+  getStocks,
+  getMoves,
+  postMove,
+  exportMovesCsv,
+  health,
+  getLocations,
+} from "./api.js";
 
 export default function App() {
   const [tab, setTab] = useState("stocks");
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
   const [toast, setToast] = useState({ type: "", msg: "" });
 
   const [items, setItems] = useState([]);
   const [stocks, setStocks] = useState([]);
 
-  const [qStocks, setQStocks] = useState("");
-  const [location, setLocation] = useState(""); // いまはALL表示（必要ならlocationマスターを読んでUI化）
   const [locations, setLocations] = useState([]);
+  const [location, setLocation] = useState(""); // stocks filter
 
+  const [qStocks, setQStocks] = useState("");
+
+  // ✅ 今月の1日〜末日（初期値）
+  const [from, setFrom] = useState(firstDayOfThisMonth_());
+  const [to, setTo] = useState(lastDayOfThisMonth_());
 
   const [moves, setMoves] = useState([]);
-  const [from, setFrom] = useState(todayMinus_(7));
-  const [to, setTo] = useState(today_());
   const [qMoves, setQMoves] = useState("");
   const [type, setType] = useState("");
 
   const kpi = useMemo(() => {
-    const low = stocks.filter(s => s.is_low).length;
+    const low = stocks.filter((s) => s.is_low).length;
     const total = stocks.length;
     const sum = stocks.reduce((acc, s) => acc + safeNum(s.qty_on_hand), 0);
     return { low, total, sum };
@@ -46,15 +55,20 @@ export default function App() {
     setToast({ type: "", msg: "" });
     try {
       await health();
+
       const locs = await getLocations();
       setLocations(locs);
+
       const its = await getItems("");
       setItems(its);
+
       const st = await getStocks({ q: "", location: "" });
       setStocks(st);
+
       const mv = await getMoves({ from, to, q: "", type: "" });
       setMoves(mv);
-      setToast({ type: "ok", msg: "接続OK。" });
+
+      setToast({ type: "ok", msg: "接続OK" });
     } catch (e) {
       setToast({ type: "ng", msg: `起動エラー: ${String(e.message || e)}` });
     } finally {
@@ -77,7 +91,7 @@ export default function App() {
     setToast({ type: "", msg: "" });
     try {
       await postMove(payload);
-      setToast({ type: "ok", msg: "登録完了。" });
+      setToast({ type: "ok", msg: "登録完了" });
       await refreshStocks();
       await refreshMoves();
       setTab("stocks");
@@ -92,7 +106,7 @@ export default function App() {
     try {
       const csv = await exportMovesCsv(from, to);
       downloadText(`stock_moves_${from}_${to}.csv`, csv, "text/csv;charset=utf-8");
-      setToast({ type: "ok", msg: "CSV出力しました。" });
+      setToast({ type: "ok", msg: "CSV出力した。Excelで開ける。" });
     } catch (e) {
       setToast({ type: "ng", msg: `CSV出力エラー: ${String(e.message || e)}` });
     }
@@ -100,9 +114,7 @@ export default function App() {
 
   const right = (
     <div>
-      <div className="badge">
-        API: {import.meta.env.VITE_API_BASE_URL ? "SET" : "MISSING"}
-      </div>
+      <div className="badge">API: {import.meta.env.VITE_API_BASE_URL ? "SET" : "MISSING"}</div>
       <div style={{ height: 8 }} />
       <button type="button" onClick={boot} disabled={loading}>
         {loading ? "再読込中..." : "再読込"}
@@ -113,7 +125,7 @@ export default function App() {
   return (
     <Layout
       title="在庫・受払管理（Sheets DB / Apps Script API）"
-      subtitle="毎日自動的に初期状態に戻るので、自由に使用して大丈夫です。"
+      subtitle="毎日自動リセットするので、自由に触って大丈夫です。"
       right={right}
     >
       <div className="kpi">
@@ -141,28 +153,36 @@ export default function App() {
         ]}
       />
 
-      {loading ? (
-        <div className="toast">読み込み中…</div>
-      ) : null}
+      {loading ? <div className="toast">読み込み中…</div> : null}
 
       {tab === "stocks" ? (
         <>
           <div className="row">
             <div style={{ flex: 2 }}>
               <label style={{ fontSize: 12, color: "var(--muted)" }}>検索（品番/品名）</label>
-              <input value={qStocks} onChange={(e) => setQStocks(e.target.value)} placeholder="例: コイル / MD-COIL-001" />
+              <input
+                value={qStocks}
+                onChange={(e) => setQStocks(e.target.value)}
+                placeholder="例: コイル / MD-COIL-001"
+              />
             </div>
+
             <div>
-              <label style={{ fontSize: 12, color: "var(--muted)" }}>場所</label>
+              <label style={{ fontSize: 12, color: "var(--muted)" }}>場所（任意）</label>
               <select value={location} onChange={(e) => setLocation(e.target.value)}>
                 <option value="">(ALL)</option>
                 {locations.map((l) => (
-                  <option key={l} value={l}>{l}</option>
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
                 ))}
               </select>
             </div>
+
             <div style={{ alignSelf: "end" }}>
-              <button type="button" onClick={refreshStocks}>検索</button>
+              <button type="button" onClick={refreshStocks}>
+                検索
+              </button>
             </div>
           </div>
 
@@ -172,14 +192,7 @@ export default function App() {
       ) : null}
 
       {tab === "move" ? (
-        <>
-          <MoveForm
-            items={items}
-            locations={locations}
-            submitting={submitting}
-            onSubmit={handleSubmitMove}
-          />
-        </>
+        <MoveForm items={items} locations={locations} submitting={submitting} onSubmit={handleSubmitMove} />
       ) : null}
 
       {tab === "moves" ? (
@@ -187,11 +200,21 @@ export default function App() {
           <div className="row">
             <div>
               <label style={{ fontSize: 12, color: "var(--muted)" }}>From</label>
-              <input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="YYYY-MM-DD" />
+              {/* ✅ カレンダー式 */}
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
             </div>
             <div>
               <label style={{ fontSize: 12, color: "var(--muted)" }}>To</label>
-              <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="YYYY-MM-DD" />
+              {/* ✅ カレンダー式 */}
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
             </div>
             <div>
               <label style={{ fontSize: 12, color: "var(--muted)" }}>種別</label>
@@ -207,14 +230,26 @@ export default function App() {
 
           <div className="row">
             <div style={{ flex: 2 }}>
-              <label style={{ fontSize: 12, color: "var(--muted)" }}>検索（item_id/場所/担当/備考/ロット）</label>
-              <input value={qMoves} onChange={(e) => setQMoves(e.target.value)} placeholder="例: user01 / 材料倉庫 / LOT" />
+              <label style={{ fontSize: 12, color: "var(--muted)" }}>
+                検索（item_id/場所/担当/備考/ロット）
+              </label>
+              <input
+                value={qMoves}
+                onChange={(e) => setQMoves(e.target.value)}
+                placeholder="例: user01 / 材料倉庫 / LOT"
+              />
             </div>
+
             <div style={{ alignSelf: "end" }}>
-              <button type="button" onClick={refreshMoves}>検索</button>
+              <button type="button" onClick={refreshMoves}>
+                検索
+              </button>
             </div>
+
             <div style={{ alignSelf: "end" }}>
-              <button type="button" onClick={handleExportCsv}>CSV出力</button>
+              <button type="button" onClick={handleExportCsv}>
+                CSV出力
+              </button>
             </div>
           </div>
 
@@ -223,22 +258,19 @@ export default function App() {
         </>
       ) : null}
 
-      {toast.msg ? (
-        <div className={`toast ${toast.type}`}>{toast.msg}</div>
-      ) : null}
+      {toast.msg ? <div className={`toast ${toast.type}`}>{toast.msg}</div> : null}
     </Layout>
   );
 }
 
-function today_() {
-  const d = new Date();
+/* =========================
+ * Date helpers (YYYY-MM-DD)
+ * ========================= */
+
+function toYmd_(d) {
   const p = (x) => String(x).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function todayMinus_(days) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  const p = (x) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+function firstDayOfThisMonth_() {
+  const d =
