@@ -106,7 +106,7 @@ export default function App() {
     try {
       const csv = await exportMovesCsv(from, to);
       downloadText(`stock_moves_${from}_${to}.csv`, csv, "text/csv;charset=utf-8");
-      setToast({ type: "ok", msg: "CSV出力した。Excelで開ける。" });
+      setToast({ type: "ok", msg: "CSV出力しました。" });
     } catch (e) {
       setToast({ type: "ng", msg: `CSV出力エラー: ${String(e.message || e)}` });
     }
