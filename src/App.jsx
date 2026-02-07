@@ -273,4 +273,14 @@ function toYmd_(d) {
 }
 
 function firstDayOfThisMonth_() {
-  const d =
+  const d = new Date();
+  const first = new Date(d.getFullYear(), d.getMonth(), 1);
+  return toYmd_(first);
+}
+
+function lastDayOfThisMonth_() {
+  const d = new Date();
+  // 次月1日の前日 = 今月末日
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return toYmd_(last);
+}
